@@ -708,7 +708,7 @@ public class VCenterNotify implements Runnable
     private void createEventFilters() throws RemoteException  {
         cleanupEventFilters();
 
-        createDvsEventFilter(vcenterDB.getContrailDvs());
+        createDvsEventFilter(vcenterDB.getTfDvs());
 
     }
 

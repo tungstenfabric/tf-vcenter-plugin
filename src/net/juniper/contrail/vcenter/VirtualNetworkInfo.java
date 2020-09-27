@@ -165,7 +165,7 @@ public class VirtualNetworkInfo extends VCenterObject {
             dvsName = event.getDvs().getName();
             dvs = vcenterDB.getVmwareDvs(dvsName, dc, dcName);
         } else {
-            dvsName = vcenterDB.contrailDvSwitchName;
+            dvsName = vcenterDB.tfDvSwitchName;
             dvs = vcenterDB.getVmwareDvs(dvsName, dc, dcName);
         }
 

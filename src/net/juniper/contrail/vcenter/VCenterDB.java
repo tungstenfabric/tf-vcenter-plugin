@@ -70,13 +70,13 @@ public class VCenterDB {
     private static final Logger s_logger =
             Logger.getLogger(VCenterDB.class);
     private static final String esxiToVRouterIpMapFile = "/etc/contrail/ESXiToVRouterIp.map";
-    protected final String contrailDvSwitchName;
-    public final String contrailDataCenterName;
-    public final String contrailClusterName;
+    protected final String tfDvSwitchName;
+    public final String tfDataCenterName;
+    public final String tfClusterName;
     private final String vcenterUrl;
     private final String vcenterUsername;
     private final String vcenterPassword;
-    private final String contrailIpFabricPgName;
+    private final String tfIpFabricPgName;
     final Mode mode;
 
     private volatile ServiceInstance serviceInstance;
@@ -84,8 +84,8 @@ public class VCenterDB {
     private volatile InventoryNavigator inventoryNavigator;
     private volatile IpPoolManager ipPoolManager;
     private volatile IpPool[] ipPools;
-    protected volatile Datacenter contrailDC;
-    protected volatile VmwareDistributedVirtualSwitch contrailDVS;
+    protected volatile Datacenter tfDC;
+    protected volatile VmwareDistributedVirtualSwitch tfDVS;
     private volatile ConcurrentMap<String, Datacenter> datacenters;
     private volatile ConcurrentMap<String, VmwareDistributedVirtualSwitch> dvswitches; // key is dvsName
     private volatile ConcurrentMap<String, VMwareDVSPvlanMapEntry[]> dvsPvlanMap; // key is dvsName
@@ -99,18 +99,18 @@ public class VCenterDB {
     }
 
     public VCenterDB(String vcenterUrl, String vcenterUsername,
-                     String vcenterPassword, String contrailDcName, String contrailClusterName,
-                     String contrailDvsName, String ipFabricPgName, Mode mode) {
+                     String vcenterPassword, String tfDcName, String tfClusterName,
+                     String tfDvsName, String ipFabricPgName, Mode mode) {
         this.vcenterUrl             = vcenterUrl;
         this.vcenterUsername        = vcenterUsername;
         this.vcenterPassword        = vcenterPassword;
-        this.contrailDataCenterName = contrailDcName;
-        this.contrailClusterName = contrailClusterName;
-        this.contrailDvSwitchName   = contrailDvsName;
-        this.contrailIpFabricPgName = ipFabricPgName;
+        this.tfDataCenterName       = tfDcName;
+        this.tfClusterName          = tfClusterName;
+        this.tfDvSwitchName         = tfDvsName;
+        this.tfIpFabricPgName       = ipFabricPgName;
         this.mode                   = mode;
 
-        s_logger.info("VCenterDB(" + contrailDvsName + ", " + ipFabricPgName + ")");
+        s_logger.info("VCenterDB(" + tfDvsName + ", " + ipFabricPgName + ")");
         datacenters = new ConcurrentHashMap<String, Datacenter>();
         dvswitches = new ConcurrentHashMap<String, VmwareDistributedVirtualSwitch>();
         dvsPvlanMap = new ConcurrentHashMap<String, VMwareDVSPvlanMapEntry[]>();
@@ -153,53 +153,53 @@ public class VCenterDB {
             s_logger.error(operationalStatus);
             return false;
         }
-        s_logger.info("Got ipPoolManager for datacenter " + contrailDataCenterName);
+        s_logger.info("Got ipPoolManager for datacenter " + tfDataCenterName);
 
-        contrailDC = null;
+        tfDC = null;
         try {
-            contrailDC = getVmwareDatacenter(contrailDataCenterName);
+            tfDC = getVmwareDatacenter(tfDataCenterName);
 
         } catch (RemoteException e) {
         }
-        if (contrailDC == null) {
-            operationalStatus = "Failed to find " + contrailDataCenterName
+        if (tfDC == null) {
+            operationalStatus = "Failed to find " + tfDataCenterName
                            + " DC on vCenter ";
             s_logger.error(operationalStatus);
             return false;
         }
-        s_logger.info("Found " + contrailDataCenterName + " DC on vCenter ");
+        s_logger.info("Found " + tfDataCenterName + " DC on vCenter ");
 
         Folder hostsFolder = null;
         try {
-            hostsFolder = contrailDC.getHostFolder();
+            hostsFolder = tfDC.getHostFolder();
         } catch (RemoteException e) {
         }
 
         if (hostsFolder == null) {
-            operationalStatus = "Failed to find hostFolder on datacenter " + contrailDataCenterName;
+            operationalStatus = "Failed to find hostFolder on datacenter " + tfDataCenterName;
             s_logger.error(operationalStatus);
             return false;
         }
 
-        contrailDVS = null;
+        tfDVS = null;
         try {
-            contrailDVS = getVmwareDvs(contrailDvSwitchName, contrailDC, contrailDataCenterName);
+            tfDVS = getVmwareDvs(tfDvSwitchName, tfDC, tfDataCenterName);
         } catch (RemoteException e) {
         }
 
-        if (contrailDVS == null) {
-            operationalStatus = "Failed to find " + contrailDvSwitchName +
+        if (tfDVS == null) {
+            operationalStatus = "Failed to find " + tfDvSwitchName +
                            " DVSwitch on vCenter";
             s_logger.error(operationalStatus);
             return false;
         }
-        s_logger.info("Found " + contrailDvSwitchName + " DVSwitch on vCenter ");
+        s_logger.info("Found " + tfDvSwitchName + " DVSwitch on vCenter ");
 
         try {
-            getDvsPvlanMap(contrailDvSwitchName, contrailDC, contrailDataCenterName);
+            getDvsPvlanMap(tfDvSwitchName, tfDC, tfDataCenterName);
         } catch (RemoteException e) {
-            s_logger.error(this + "Private vlan not configured on dvSwitch: " + contrailDvSwitchName +
-                    " Datacenter: " + contrailDataCenterName);
+            s_logger.error(this + "Private vlan not configured on dvSwitch: " + tfDvSwitchName +
+                    " Datacenter: " + tfDataCenterName);
         }
 
         // All well on vCenter front.
@@ -335,15 +335,15 @@ public class VCenterDB {
     }
 
     public Datacenter getDatacenter() {
-      return contrailDC;
+      return tfDC;
     }
 
     public void setDatacenter(Datacenter _dc) {
-      contrailDC = _dc;
+      tfDC = _dc;
     }
 
     public VmwareDistributedVirtualSwitch getDvs() {
-        return contrailDVS;
+        return tfDVS;
     }
 
     protected static String getVirtualMachineMacAddress(
@@ -424,10 +424,10 @@ public class VCenterDB {
             }
             for (GuestNicInfo nicInfo : nicInfos) {
                 // Extract the IP address associated with simple port
-                // group. Assumption here is that Contrail VRouter VM will
+                // group. Assumption here is that TungstenFabric VRouter VM will
                 // have only one standard port group
                 String networkName = nicInfo.getNetwork();
-                if (networkName == null || !networkName.equals(contrailIpFabricPgName)) {
+                if (networkName == null || !networkName.equals(tfIpFabricPgName)) {
                     continue;
                 }
                 Network network = (Network)
@@ -486,7 +486,7 @@ public class VCenterDB {
         }
         for (GuestNicInfo nicInfo : nicInfos) {
             // Extract the IP address associated with simple port
-            // group. Assumption here is that Contrail VRouter VM will
+            // group. Assumption here is that TungstenFabric VRouter VM will
             // have only one standard port group
             String networkName = nicInfo.getNetwork();
             if (networkName == null || !networkName.equals(dvPgName)) {
@@ -508,7 +508,7 @@ public class VCenterDB {
                 ipAddrConfigInfos) {
                 String ipAddress = ipAddrConfigInfo.getIpAddress();
                 InetAddress ipAddr = InetAddress.getByName(ipAddress);
-                if (ipAddr instanceof Inet4Address) {
+if (ipAddr instanceof Inet4Address) {
                     // the VMI can have multiple IPv4 and IPv6 addresses,
                     // but we pick only the first IPv4 address
                     return ipAddress;
@@ -828,20 +828,20 @@ public class VCenterDB {
         String dcName;
         Datacenter dc;
 
-        // If contrailClusterName is null, all clusters under datacenter 
+        // If tfClusterName is null, all clusters under datacenter 
         // are monitored by vcenter plugin.
-        if (contrailClusterName == null)
+        if (tfClusterName == null)
             return true;
 
         if (event.getHost() != null) {
             hostName = event.getHost().getName();
-            HostSystem host = getVmwareHost(hostName, contrailDC, contrailDataCenterName);
+            HostSystem host = getVmwareHost(hostName, tfDC, tfDataCenterName);
 
             if (host != null) {
                 ClusterComputeResource cluster = (ClusterComputeResource) host.getParent();
                 if (cluster != null) {
                     String clstrName = cluster.getName();
-                    if (clstrName != null && clstrName.equals(contrailClusterName)) {
+                    if (clstrName != null && clstrName.equals(tfClusterName)) {
                         return true;
                     }
                 }
@@ -887,15 +887,15 @@ public class VCenterDB {
         SortedMap<String, VirtualNetworkInfo> map =
                 new ConcurrentSkipListMap<String, VirtualNetworkInfo>();
 
-        if (contrailDVS == null) {
-            s_logger.error("dvSwitch: " + contrailDvSwitchName +
+        if (tfDVS == null) {
+            s_logger.error("dvSwitch: " + tfDvSwitchName +
                     " NOT configured");
             return map;
         }
         // Extract distributed virtual port groups
-        DistributedVirtualPortgroup[] dvPgs = contrailDVS.getPortgroup();
+        DistributedVirtualPortgroup[] dvPgs = tfDVS.getPortgroup();
         if (dvPgs == null || dvPgs.length == 0) {
-            s_logger.error("dvSwitch: " + contrailDvSwitchName +
+            s_logger.error("dvSwitch: " + tfDvSwitchName +
                     " Distributed portgroups NOT configured");
             return map;
         }
@@ -920,8 +920,8 @@ public class VCenterDB {
             }
             VirtualNetworkInfo vnInfo =
                     new VirtualNetworkInfo(
-                            this, dvPgs[i], pTables[i], contrailDC, contrailDataCenterName,
-                            contrailDVS, contrailDvSwitchName);
+                            this, dvPgs[i], pTables[i], tfDC, tfDataCenterName,
+                            tfDVS, tfDvSwitchName);
 
             s_logger.debug("Read from vcenter " + vnInfo + ", ipPoolId " + vnInfo.getIpPoolId());
             VCenterNotify.watchVn(vnInfo);
@@ -948,7 +948,7 @@ public class VCenterDB {
         String vrouterIpAddress = null;
         HostSystem host = null;
         // If the passed Managed Entity is at the host-level, then pass
-        // the hostName and Contrail VM IP Address instead of finding
+        // the hostName and TungstenFabric VM IP Address instead of finding
         // it every time for every VM which is costly.
         if (me instanceof HostSystem) {
             host = (HostSystem) me;
@@ -1000,8 +1000,8 @@ public class VCenterDB {
                 ComputeResource cr = (ComputeResource) e;
                 if (e instanceof ClusterComputeResource) {
                     ClusterComputeResource cluster = (ClusterComputeResource) e;
-                    if ((contrailClusterName != null) && 
-                         (cluster.getName().equals(contrailClusterName) != true)) {
+                    if ((tfClusterName != null) && 
+                         (cluster.getName().equals(tfClusterName) != true)) {
                        continue;
                    }
                 }
@@ -1031,7 +1031,7 @@ public class VCenterDB {
             readVirtualMachines(map, host, dc, dcName);
          */
 
-        Folder hostsFolder = contrailDC.getHostFolder();
+        Folder hostsFolder = tfDC.getHostFolder();
 
         if (hostsFolder == null) {
             s_logger.error("Unable to read VMs, hostFolder is null");
@@ -1043,7 +1043,7 @@ public class VCenterDB {
         findHostsInFolder(hostsFolder, hostsList);
 
         for (HostSystem host : hostsList) {
-            readVirtualMachines(map, host, contrailDC, contrailDataCenterName);
+            readVirtualMachines(map, host, tfDC, tfDataCenterName);
         }
 
         s_logger.info("Done reading from vcenter, found " + map.size() + " Virtual Machines");
@@ -1127,8 +1127,8 @@ public class VCenterDB {
         return lastTimeSeenAlive;
     }
 
-    public VmwareDistributedVirtualSwitch getContrailDvs() {
-        return contrailDVS;
+    public VmwareDistributedVirtualSwitch getTfDvs() {
+        return tfDVS;
     }
 
     private static TaskInfo waitFor(Task task) throws RemoteException, InterruptedException {

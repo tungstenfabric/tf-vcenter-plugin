@@ -137,7 +137,7 @@ public class MainDB {
                 } else if (cmp < 0) {
                     if (mode != Mode.VCENTER_AS_COMPUTE) {
                         sleepDelta();
-                        vcenterDB.createVmwareDPG(vcenterDB.getContrailDvs(), newEntry.getValue().getName());
+                        vcenterDB.createVmwareDPG(vcenterDB.getTfDvs(), newEntry.getValue().getName());
                         s_logger.info("Create Vmware DPG [" + newEntry.getValue().getName() + "]" );
                     }
                     newEntry = newIter.hasNext()? newIter.next() : null;
@@ -145,7 +145,7 @@ public class MainDB {
                     if (mode != Mode.VCENTER_AS_COMPUTE) {
                         sleepDelta();
                         vcenterDB.deleteVmwarePG(vcenterDB.getVmwareDpg(oldEntry.getValue().getName(),
-                       	        vcenterDB.getContrailDvs(), vcenterDB.contrailDvSwitchName,
+                       	        vcenterDB.getTfDvs(), vcenterDB.tfDvSwitchName,
                                 vcenterDB.contrailDataCenterName));
                         s_logger.info("Delete Vmware DPG [" + oldEntry.getValue().getName() + "]" );
                     }
@@ -160,7 +160,7 @@ public class MainDB {
         while (newEntry != null) {
             try {
                 sleepDelta();
-                vcenterDB.createVmwareDPG(vcenterDB.getContrailDvs(), newEntry.getValue().getName());
+                vcenterDB.createVmwareDPG(vcenterDB.getTfDvs(), newEntry.getValue().getName());
                 s_logger.info("Create Vmware DPG [" + newEntry.getValue().getName() + "]" );
             } catch (Exception e) {
                 s_logger.error("Cannot create new ["  + newEntry.getKey() + ", " + newEntry.getValue() + "]" );
@@ -199,7 +199,7 @@ public class MainDB {
             if (newVncVn) {
                 try {
                     sleepDelta();
-                    vcenterDB.createVmwareDPG(vcenterDB.getContrailDvs(), newEntry.getValue().getName());
+                    vcenterDB.createVmwareDPG(vcenterDB.getTfDvs(), newEntry.getValue().getName());
                     s_logger.info("Create Vmware DPG [" + newEntry.getValue().getName() + "]" );
                 } catch (Exception e) {
                     s_logger.error("Cannot create new ["  + newEntry.getKey() + ", " + newEntry.getValue() + "]" );
@@ -231,7 +231,7 @@ public class MainDB {
                 try {
                     sleepDelta();
                     vcenterDB.deleteVmwarePG(vcenterDB.getVmwareDpg(oldEntry.getValue().getName(),
-                            vcenterDB.getContrailDvs(), vcenterDB.contrailDvSwitchName,
+                            vcenterDB.getTfDvs(), vcenterDB.tfDvSwitchName,
                             vcenterDB.contrailDataCenterName));
                     s_logger.info("Delete Vmware DPG [" + oldEntry.getValue().getName() + "]" );
                 } catch (Exception e) {
