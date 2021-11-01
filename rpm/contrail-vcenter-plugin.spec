@@ -19,7 +19,7 @@ License: Commercial
 URL:     http://www.juniper.net/
 Vendor:  Juniper Networks Inc
 
-Requires: java-1.7.0-openjdk
+Requires: java-1.8.0-openjdk
 
 %{echo: "Build dir %{_topdir}\n"}
 %description
